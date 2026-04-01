@@ -60,8 +60,10 @@ TELEGRAM_CHAT_ID=
 ```
 project/
 ├── config/
-│   ├── settings.py     # 환경변수 로드 (OKX / Binance / Telegram)
+│   ├── settings.py     # API 키, SYMBOLS, WS URL (OKX / Binance / Telegram)
 │   └── logger.py       # loguru 로깅 설정
+├── db/
+│   └── candle_store.py # SQLite 캔들 저장 (init_db, upsert_candle, get_last_ts, backfill_recent)
 ├── notify/
 │   └── telegram.py     # 텔레그램 메시지 / 파일 전송
 ├── data/               # DB 파일 저장 (gitignore)
@@ -73,7 +75,7 @@ project/
 └── poetry.lock
 ```
 
-새 프로젝트에서 필요한 모듈(collector, db, strategy, trader, order 등)을 추가해서 사용.
+새 프로젝트에서 필요한 모듈(collector, strategy, trader, order 등)을 추가해서 사용.
 
 ---
 
@@ -138,8 +140,38 @@ with open("result.xlsx", "rb") as f:
 
 ```python
 from config.settings import OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE
+from config.settings import OKX_WS_PUBLIC, OKX_WS_BUSINESS, OKX_WS_PRIVATE, OKX_REST_URL
 from config.settings import BINANCE_API_KEY, BINANCE_SECRET_KEY
+from config.settings import BINANCE_WS_PUBLIC, BINANCE_REST_URL
 from config.settings import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+from config.settings import SYMBOLS
+```
+
+심볼 목록은 `config/settings.py`의 `SYMBOLS` 리스트에서 관리:
+
+```python
+SYMBOLS = [
+    "BTC-USDT-SWAP",
+    "ETH-USDT-SWAP",   # 주석 해제하면 추가됨
+]
+```
+
+### DB (캔들 저장)
+
+```python
+from db.candle_store import init_db, upsert_candle, get_last_ts, backfill_recent
+
+# 초기화 (최초 1회)
+init_db()
+
+# 최근 캔들 백필 (데이터 없을 때 자동 수집)
+await backfill_recent("BTC-USDT-SWAP", count=1100)
+
+# 캔들 저장 (WebSocket 수신 시)
+upsert_candle(symbol="BTC-USDT-SWAP", ts=ts, open_=o, high=h, low=l, close=c, volume=v, confirm=1)
+
+# 마지막 저장 ts 조회 (gap fill 용)
+last_ts = get_last_ts("BTC-USDT-SWAP")
 ```
 
 ### Makefile
