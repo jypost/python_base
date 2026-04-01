@@ -206,3 +206,4 @@ poetry add 패키지명
 
 - 베이스 프로젝트: Pi_okx (OKX 자동매매 봇) 구조 기반
 - `.venv`, `.env`, `data/`, `logs/` 는 `.gitignore`에 포함
+# okx2
